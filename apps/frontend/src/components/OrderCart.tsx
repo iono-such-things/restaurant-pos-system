@@ -1,9 +1,8 @@
 import React from 'react';
-import { Order, OrderItem } from '../types/order.types';
+import { Order } from '../types/order.types';
 
 interface OrderCartProps {
   order: Order | null;
-  onAddItem: (menuItemId: string, quantity: number) => void;
   onRemoveItem: (itemId: string) => void;
   onUpdateQuantity: (itemId: string, quantity: number) => void;
   onSubmitOrder: () => void;
@@ -12,7 +11,6 @@ interface OrderCartProps {
 
 export const OrderCart: React.FC<OrderCartProps> = ({
   order,
-  onAddItem,
   onRemoveItem,
   onUpdateQuantity,
   onSubmitOrder,
@@ -105,20 +103,19 @@ export const OrderCart: React.FC<OrderCartProps> = ({
       </div>
 
       <div className="cart-actions">
-        <button
-          onClick={onSubmitOrder}
-          disabled={order.items.length === 0}
-          className="btn btn-primary"
-        >
-          Submit Order
+        <button onClick={onCancelOrder} className="btn-cancel">
+          Cancel Order
         </button>
         <button
-          onClick={onCancelOrder}
-          className="btn btn-secondary"
+          onClick={onSubmitOrder}
+          className="btn-submit"
+          disabled={order.items.length === 0}
         >
-          Cancel
+          Submit Order
         </button>
       </div>
     </div>
   );
 };
+
+export default OrderCart;
