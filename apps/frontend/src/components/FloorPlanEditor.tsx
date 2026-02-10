@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { Table, TableStatus, TableShape } from '../types/table.types';
+import { Table, TableStatus } from '../types/table.types';
 import TableComponent from './Table';
 
 interface FloorPlanEditorProps {
@@ -92,10 +92,9 @@ export const FloorPlanEditor: React.FC<FloorPlanEditorProps> = ({
           width: `${width}px`,
           height: `${height}px`,
           position: 'relative',
-          backgroundColor: '#f5f5f5',
-          border: '2px solid #ddd',
+          background: '#f8f9fa',
+          border: '1px solid #dee2e6',
           borderRadius: '8px',
-          cursor: editorMode === 'edit' ? 'crosshair' : 'default',
           overflow: 'hidden',
         }}
         onMouseMove={handleMouseMove}
@@ -107,40 +106,15 @@ export const FloorPlanEditor: React.FC<FloorPlanEditorProps> = ({
           <TableComponent
             key={table.id}
             table={table}
-            onMouseDown={(e) => handleTableMouseDown(table.id, e)}
             onClick={() => onTableClick(table)}
-            draggable={editorMode === 'edit'}
-            isDragging={table.id === draggingTable}
+            onMouseDown={(e) => handleTableMouseDown(table.id, e)}
+            isDragging={draggingTable === table.id}
           />
         ))}
-        
-        {/* Grid overlay for editor mode */}
-        {editorMode === 'edit' && (
-          <div
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundImage: `
-                repeating-linear-gradient(0deg, rgba(0,0,0,0.05) 0px, rgba(0,0,0,0.05) 1px, transparent 1px, transparent 20px),
-                repeating-linear-gradient(90deg, rgba(0,0,0,0.05) 0px, rgba(0,0,0,0.05) 1px, transparent 1px, transparent 20px)
-              `,
-              pointerEvents: 'none',
-            }}
-          />
-        )}
       </div>
-      
-      {/* Editor controls */}
       {editorMode === 'edit' && (
-        <div className="editor-controls" style={{ marginTop: '16px' }}>
-          <div className="editor-info">
-            <p>Click on empty space to add a new table</p>
-            <p>Drag tables to reposition them</p>
-            <p>Click on a table to edit its properties</p>
-          </div>
+        <div className="editor-hint">
+          Click an empty space to add a new table, or drag existing tables to move them
         </div>
       )}
     </div>
