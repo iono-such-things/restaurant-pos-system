@@ -51,4 +51,30 @@ export const tableApi = {
     });
     if (!response.ok) throw new Error('Failed to delete table');
   },
+
+  // Missing methods needed by tableSlice.ts
+  async getTablesByFloorPlan(floorPlanId: string): Promise<Table[]> {
+    // This is the same as getTables - aliasing for consistency
+    return this.getTables(floorPlanId);
+  },
+
+  async assignToSection(tableId: string, sectionId: string): Promise<Table> {
+    const response = await fetch(`${API_BASE_URL}/api/tables/${tableId}/section`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sectionId }),
+    });
+    if (!response.ok) throw new Error('Failed to assign table to section');
+    return response.json();
+  },
+
+  async bulkUpdatePositions(updates: Array<{ id: string; position: { x: number; y: number } }>): Promise<Table[]> {
+    const response = await fetch(`${API_BASE_URL}/api/tables/bulk-positions`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ updates }),
+    });
+    if (!response.ok) throw new Error('Failed to bulk update table positions');
+    return response.json();
+  },
 };
