@@ -1,102 +1,54 @@
-import { Table, UpdateTableStatusDto, CreateTableDto } from '../types/table.types';
+import { Table, TableStatus } from '../types/table.types';
 
-// API base URL - should be configured via environment variables
-const API_BASE_URL = process.env.VITE_API_URL || 'http://localhost:3000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 export const tableApi = {
-  // Get all tables for a specific floor plan
-  async getTablesByFloorPlan(floorPlanId: string): Promise<Table[]> {
-    const response = await fetch(`${API_BASE_URL}/tables?floorPlanId=${floorPlanId}`);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch tables: ${response.statusText}`);
-    }
+  async getTables(floorPlanId: string): Promise<Table[]> {
+    const response = await fetch(`${API_BASE_URL}/api/tables?floorPlanId=${floorPlanId}`);
+    if (!response.ok) throw new Error('Failed to fetch tables');
     return response.json();
   },
 
-  // Get a single table by ID
-  async getTableById(tableId: string): Promise<Table> {
-    const response = await fetch(`${API_BASE_URL}/tables/${tableId}`);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch table: ${response.statusText}`);
-    }
+  async getTable(id: string): Promise<Table> {
+    const response = await fetch(`${API_BASE_URL}/api/tables/${id}`);
+    if (!response.ok) throw new Error('Failed to fetch table');
     return response.json();
   },
 
-  // Create a new table
-  async createTable(tableData: CreateTableDto): Promise<Table> {
-    const response = await fetch(`${API_BASE_URL}/tables`, {
+  async createTable(data: Partial<Table>): Promise<Table> {
+    const response = await fetch(`${API_BASE_URL}/api/tables`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(tableData),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
     });
-    if (!response.ok) {
-      throw new Error(`Failed to create table: ${response.statusText}`);
-    }
+    if (!response.ok) throw new Error('Failed to create table');
     return response.json();
   },
 
-  // Update table properties (position, dimensions, etc.)
-  async updateTable(tableId: string, updates: Partial<Table>): Promise<Table> {
-    const response = await fetch(`${API_BASE_URL}/tables/${tableId}`, {
+  async updateTable(id: string, data: Partial<Table>): Promise<Table> {
+    const response = await fetch(`${API_BASE_URL}/api/tables/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) throw new Error('Failed to update table');
+    return response.json();
+  },
+
+  async updateTableStatus(id: string, status: TableStatus): Promise<Table> {
+    const response = await fetch(`${API_BASE_URL}/api/tables/${id}/status`, {
       method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(updates),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
     });
-    if (!response.ok) {
-      throw new Error(`Failed to update table: ${response.statusText}`);
-    }
+    if (!response.ok) throw new Error('Failed to update table status');
     return response.json();
   },
 
-  // Update table status (AVAILABLE, OCCUPIED, RESERVED, etc.)
-  async updateTableStatus(tableId: string, statusUpdate: UpdateTableStatusDto): Promise<Table> {
-    const response = await fetch(`${API_BASE_URL}/tables/${tableId}/status`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(statusUpdate),
-    });
-    if (!response.ok) {
-      throw new Error(`Failed to update table status: ${response.statusText}`);
-    }
-    return response.json();
-  },
-
-  // Delete a table
-  async deleteTable(tableId: string): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/tables/${tableId}`, {
+  async deleteTable(id: string): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/api/tables/${id}`, {
       method: 'DELETE',
     });
-    if (!response.ok) {
-      throw new Error(`Failed to delete table: ${response.statusText}`);
-    }
-  },
-
-  // Bulk update table positions (for drag operations)
-  async bulkUpdatePositions(updates: Array<{ id: string; x: number; y: number }>): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/tables/bulk-update-positions`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ updates }),
-    });
-    if (!response.ok) {
-      throw new Error(`Failed to bulk update positions: ${response.statusText}`);
-    }
-  },
-
-  // Get tables by section
-  async getTablesBySection(floorPlanId: string, section: string): Promise<Table[]> {
-    const response = await fetch(`${API_BASE_URL}/tables?floorPlanId=${floorPlanId}&section=${section}`);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch tables by section: ${response.statusText}`);
-    }
-    return response.json();
+    if (!response.ok) throw new Error('Failed to delete table');
   },
 };
