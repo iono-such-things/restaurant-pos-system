@@ -1,18 +1,14 @@
 import { PrismaClient, PaymentMethod, PaymentStatus } from '@prisma/client';
-import Stripe from 'stripe';
 
 const prisma = new PrismaClient();
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2023-10-16',
-});
 
 export class PaymentService {
   async createPayment(data: {
     orderId: string;
     amount: number;
     method: PaymentMethod;
-    customerId?: string;
-    stripePaymentIntentId?: string;
+    splitNumber?: number;
+    transactionId?: string;
   }) {
     const payment = await prisma.payment.create({
       data: {
@@ -20,25 +16,12 @@ export class PaymentService {
         amount: data.amount,
         method: data.method,
         status: 'PENDING',
-        customerId: data.customerId,
-        stripePaymentIntentId: data.stripePaymentIntentId,
+        splitNumber: data.splitNumber,
+        transactionId: data.transactionId,
       },
     });
 
     return payment;
-  }
-
-  async createPaymentIntent(amount: number, customerId?: string) {
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(amount * 100), // Convert to cents
-      currency: 'usd',
-      customer: customerId,
-      automatic_payment_methods: {
-        enabled: true,
-      },
-    });
-
-    return paymentIntent;
   }
 
   async confirmPayment(paymentId: string) {
@@ -59,7 +42,7 @@ export class PaymentService {
     if (order) {
       const totalPaid = order.payments
         .filter((p) => p.status === 'COMPLETED')
-        .reduce((sum, p) => sum + p.amount, 0);
+        .reduce((sum, p) => sum + Number(p.amount), 0);
 
       const orderTotal = await this.calculateOrderTotal(order.id);
 
@@ -74,7 +57,7 @@ export class PaymentService {
     return payment;
   }
 
-  async processRefund(paymentId: string, amount?: number) {
+  async processRefund(paymentId: string, _amount?: number) {
     const payment = await prisma.payment.findUnique({
       where: { id: paymentId },
     });
@@ -83,36 +66,18 @@ export class PaymentService {
       throw new Error('Payment not found');
     }
 
-    if (payment.method === 'CARD' && payment.stripePaymentIntentId) {
-      const refund = await stripe.refunds.create({
-        payment_intent: payment.stripePaymentIntentId,
-        amount: amount ? Math.round(amount * 100) : undefined,
-      });
-
-      await prisma.payment.update({
-        where: { id: paymentId },
-        data: {
-          status: 'REFUNDED',
-          refundedAt: new Date(),
-        },
-      });
-
-      return refund;
-    }
-
-    // For cash/other methods, just update status
+    // Update payment status to refunded
     await prisma.payment.update({
       where: { id: paymentId },
       data: {
         status: 'REFUNDED',
-        refundedAt: new Date(),
       },
     });
 
     return { success: true };
   }
 
-  async splitBill(orderId: string, splits: Array<{ amount: number; customerId?: string }>) {
+  async splitBill(orderId: string, splits: Array<{ amount: number }>) {
     const order = await prisma.order.findUnique({
       where: { id: orderId },
       include: { items: { include: { menuItem: true } } },
@@ -130,12 +95,12 @@ export class PaymentService {
     }
 
     const payments = await Promise.all(
-      splits.map((split) =>
+      splits.map((split, index) =>
         this.createPayment({
           orderId,
           amount: split.amount,
-          method: 'CARD',
-          customerId: split.customerId,
+          method: 'CREDIT_CARD',
+          splitNumber: index + 1,
         })
       )
     );
@@ -160,7 +125,7 @@ export class PaymentService {
     }
 
     const subtotal = order.items.reduce((sum, item) => {
-      return sum + item.menuItem.price * item.quantity;
+      return sum + Number(item.menuItem.price) * item.quantity;
     }, 0);
 
     const tax = subtotal * 0.08; // 8% tax

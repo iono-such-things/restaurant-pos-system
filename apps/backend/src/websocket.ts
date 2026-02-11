@@ -1,5 +1,5 @@
 import { Server, Socket } from 'socket.io';
-import jwt from 'jsonwebtoken';
+import * as jwt from 'jsonwebtoken';
 
 interface SocketUser {
   id: string;

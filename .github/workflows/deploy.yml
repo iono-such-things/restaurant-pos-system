@@ -8,32 +8,11 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18'
-        
-    - name: Install dependencies
-      run: |
-        npm install
-        cd apps/backend && npm install
-        cd ../frontend && npm install
-        
-    - name: Build frontend
-      run: |
-        cd apps/frontend
-        npm run build
-        
-    - name: Build backend
-      run: |
-        cd apps/backend
-        npm run build
-        
+
     - name: Deploy to Server
       uses: appleboy/ssh-action@v1.0.0
       with:
@@ -41,35 +20,45 @@ jobs:
         username: ${{ secrets.SERVER_USER }}
         password: ${{ secrets.SERVER_PASSWORD }}
         script: |
-          # Navigate to app directory
-          cd /var/www/restaurant-pos
-          
-          # Pull latest code
-          git pull origin main || git clone https://github.com/dutchiono/restaurant-pos-system.git .
-          
-          # Install dependencies
+          set -e
+
+          APP_DIR="/var/www/eats"
+          REPO_URL="https://github.com/ionoi-inc/restaurant-pos-system.git"
+
+          echo "Starting deployment..."
+
+          if [ -d "$APP_DIR/.git" ]; then
+            echo "Updating remote to org repo..."
+            cd $APP_DIR
+            git remote set-url origin $REPO_URL
+            git fetch origin main
+            git reset --hard origin/main
+          else
+            echo "Initial clone..."
+            git clone $REPO_URL $APP_DIR
+            cd $APP_DIR
+          fi
+
+          echo "Installing dependencies..."
+          cd $APP_DIR
           npm install
           cd apps/backend && npm install && cd ../..
           cd apps/frontend && npm install && cd ../..
-          
-          # Build frontend
-          cd apps/frontend
-          npm run build
-          cd ../..
-          
-          # Build backend
-          cd apps/backend
-          npm run build
-          cd ../..
-          
-          # Run database migrations
-          cd apps/backend
-          npx prisma generate
-          npx prisma migrate deploy
-          cd ../..
-          
-          # Restart service
+
+          echo "Building frontend..."
+          cd apps/frontend && npm run build && cd ../..
+
+          echo "Building backend..."
+          cd apps/backend && npx prisma generate && npm run build && cd ../..
+
+          echo "Preserving .env — creating only if missing..."
+          if [ ! -f apps/backend/.env ]; then
+            echo "PORT=3146" > apps/backend/.env
+            echo "NODE_ENV=production" >> apps/backend/.env
+          fi
+
+          echo "Restarting service..."
           sudo systemctl restart restaurant-pos
-          
-          # Check status
+
+          echo "Deployment complete!"
           sudo systemctl status restaurant-pos --no-pager

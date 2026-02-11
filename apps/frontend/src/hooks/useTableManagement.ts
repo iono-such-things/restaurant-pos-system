@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { Table, TableStatus, CreateTableDto, UpdateTableDto, UpdateTableStatusDto } from '../types/table.types';
+import { Table, CreateTableDto, UpdateTableDto, UpdateTableStatusDto } from '../types/table.types';
 import { tableApi } from '../api/table.api';
 
 export const useTableManagement = (floorPlanId: string) => {
@@ -130,7 +130,7 @@ export const useTableManagement = (floorPlanId: string) => {
     }
   }, []);
 
-  const assignToSection = useCallback(async (tableId: string, sectionId: string | null) => {
+  const assignToSection = useCallback(async (tableId: string, sectionId: string) => {
     try {
       setLoading(true);
       setError(null);
